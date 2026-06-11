@@ -38,11 +38,17 @@ export class RecurringTransactionProcessorService {
    */
   @Cron(CronExpression.EVERY_HOUR)
   async handleHourlyProcessing() {
+    const now = new Date();
+
+    if (now.getHours() === 0) {
+      return;
+    }
+
     this.logger.debug('Verificando transações recorrentes pendentes...');
 
     try {
       const result = await this.processRecurringTransactionsUseCase.execute({
-        date: new Date(),
+        date: now,
       });
 
       if (result.createdTransactions > 0) {

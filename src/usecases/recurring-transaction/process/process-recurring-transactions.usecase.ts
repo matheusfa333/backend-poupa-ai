@@ -52,6 +52,17 @@ export class ProcessRecurringTransactionsUseCase
       if (shouldProcess) {
         // Calcula a data da transação baseada na frequency
         const transactionDate = this.calculateTransactionDate(recurring, date);
+        const existingTransaction = await this.findExistingTransactionForDay(
+          recurring,
+          transactionDate,
+        );
+
+        if (existingTransaction) {
+          recurring.markAsProcessed(date);
+          await this.recurringTransactionRepository.update(recurring);
+          processedCount++;
+          continue;
+        }
 
         // Cria a transação
         const transaction = Transaction.create({
@@ -104,9 +115,10 @@ export class ProcessRecurringTransactionsUseCase
       return false;
     }
 
-    // Se nunca foi processado, processa
+    // Se nunca foi processado, processa apenas se a data atual for elegível
+    // para a frequência configurada.
     if (!lastProcessed) {
-      return true;
+      return this.isDueForFrequency(recurring, currentDate, startDate);
     }
 
     // Verifica baseado na frequência
@@ -130,6 +142,53 @@ export class ProcessRecurringTransactionsUseCase
       default:
         return false;
     }
+  }
+
+  private isDueForFrequency(
+    recurring: any,
+    currentDate: Date,
+    startDate: Date,
+  ): boolean {
+    switch (recurring.getFrequency()) {
+      case 'DAILY':
+        return true;
+      case 'WEEKLY': {
+        const dayOfWeek = recurring.getDayOfWeek();
+        return dayOfWeek === null || currentDate.getDay() === dayOfWeek;
+      }
+      case 'MONTHLY':
+        return this.isDueOnDayOfMonth(
+          currentDate,
+          recurring.getDayOfMonth(),
+        );
+      case 'YEARLY':
+        return (
+          currentDate.getMonth() === startDate.getMonth() &&
+          currentDate.getDate() === startDate.getDate()
+        );
+      default:
+        return false;
+    }
+  }
+
+  private isDueOnDayOfMonth(
+    currentDate: Date,
+    dayOfMonth: number | null,
+  ): boolean {
+    if (dayOfMonth === null) {
+      return true;
+    }
+
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+    const lastDayOfMonth = new Date(
+      currentYear,
+      currentMonth + 1,
+      0,
+    ).getDate();
+    const targetDay = Math.min(dayOfMonth, lastDayOfMonth);
+
+    return currentDate.getDate() === targetDay;
   }
 
   /**
@@ -238,7 +297,7 @@ export class ProcessRecurringTransactionsUseCase
 
     switch (frequency) {
       case 'DAILY':
-        return new Date(currentDate);
+        return this.normalizeDate(new Date(currentDate));
 
       case 'WEEKLY': {
         const date = new Date(currentDate);
@@ -249,7 +308,7 @@ export class ProcessRecurringTransactionsUseCase
           const diff = dayOfWeek - currentDay;
           date.setDate(date.getDate() + diff);
         }
-        return date;
+        return this.normalizeDate(date);
       }
 
       case 'MONTHLY': {
@@ -264,7 +323,7 @@ export class ProcessRecurringTransactionsUseCase
           const targetDay = Math.min(dayOfMonth, lastDayOfMonth);
           date.setDate(targetDay);
         }
-        return date;
+        return this.normalizeDate(date);
       }
 
       case 'YEARLY': {
@@ -272,11 +331,36 @@ export class ProcessRecurringTransactionsUseCase
         const date = new Date(currentDate);
         date.setMonth(startDate.getMonth());
         date.setDate(startDate.getDate());
-        return date;
+        return this.normalizeDate(date);
       }
 
       default:
-        return new Date(currentDate);
+        return this.normalizeDate(new Date(currentDate));
     }
+  }
+
+  private normalizeDate(date: Date): Date {
+    const normalizedDate = new Date(date);
+    normalizedDate.setHours(0, 0, 0, 0);
+    return normalizedDate;
+  }
+
+  private async findExistingTransactionForDay(
+    recurring: any,
+    transactionDate: Date,
+  ): Promise<boolean> {
+    const startDate = this.normalizeDate(transactionDate);
+    const endDate = new Date(startDate);
+    endDate.setHours(23, 59, 59, 999);
+
+    const { transactions } = await this.transactionGateway.findByUserId(
+      recurring.getUserId(),
+      { startDate, endDate },
+    );
+
+    return transactions.some(
+      (transaction) =>
+        transaction.getRecurringTransactionId() === recurring.getId(),
+    );
   }
 }

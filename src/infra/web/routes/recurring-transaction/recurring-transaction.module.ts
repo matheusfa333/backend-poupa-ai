@@ -9,7 +9,6 @@ import { PrismaModule } from 'src/infra/services/database/prisma/prisma.module';
 import { ServiceModule } from 'src/infra/services/service.module';
 import { RecurringTransactionUsecaseModule } from 'src/usecases/recurring-transaction/usecase.module';
 import { DatabaseModule } from 'src/infra/repositories/database.module';
-import { TransactionGateway } from 'src/domain/repositories/transaction.gateway';
 
 @Module({
   imports: [
@@ -44,16 +43,10 @@ import { TransactionGateway } from 'src/domain/repositories/transaction.gateway'
     },
     {
       provide: DeleteRecurringTransactionUsecase,
-      useFactory: (
-        repository: PrismaRecurringTransactionRepository,
-        transactionGateway: TransactionGateway,
-      ) => {
-        return new DeleteRecurringTransactionUsecase(
-          repository,
-          transactionGateway,
-        );
+      useFactory: (repository: PrismaRecurringTransactionRepository) => {
+        return new DeleteRecurringTransactionUsecase(repository);
       },
-      inject: [PrismaRecurringTransactionRepository, TransactionGateway],
+      inject: [PrismaRecurringTransactionRepository],
     },
   ],
 })

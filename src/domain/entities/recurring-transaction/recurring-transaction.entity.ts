@@ -38,7 +38,7 @@ export type RecurringTransactionCreateDto = {
   frequency: RecurrenceFrequency;
   startDate: Date;
   endDate?: Date;
-  dayOfMonth?: number; // 1-31 para MONTHLY
+  dayOfMonth?: number; // 1-28 para MONTHLY
   dayOfWeek?: number; // 0-6 para WEEKLY (0 = domingo)
 };
 

@@ -62,8 +62,8 @@ export const RecurringTransactionZodValidator = z
     dayOfMonth: z
       .number()
       .int()
-      .min(1, 'O dia do mês deve estar entre 1 e 31')
-      .max(31, 'O dia do mês deve estar entre 1 e 31')
+      .min(1, 'O dia do mês deve estar entre 1 e 28')
+      .max(28, 'O dia do mês deve estar entre 1 e 28')
       .nullable()
       .optional(),
 

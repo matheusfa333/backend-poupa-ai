@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { UseCase } from 'src/usecases/usecase';
 import type { RecurringTransactionRepository } from 'src/domain/repositories/recurring-transaction.repository.interface';
-import type { TransactionGateway } from 'src/domain/repositories/transaction.gateway';
 
 export interface DeleteRecurringTransactionInput {
   id: string;
@@ -20,7 +19,6 @@ export class DeleteRecurringTransactionUsecase
   constructor(
     @Inject('RecurringTransactionRepository')
     private readonly recurringTransactionRepository: RecurringTransactionRepository,
-    private readonly transactionGateway: TransactionGateway,
   ) {}
 
   async execute(
@@ -38,7 +36,6 @@ export class DeleteRecurringTransactionUsecase
     }
 
     await this.recurringTransactionRepository.delete(input.id);
-    await this.transactionGateway.softDeleteByRecurringTransactionId(input.id);
 
     return { success: true };
   }

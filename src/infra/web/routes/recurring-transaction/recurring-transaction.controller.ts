@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   Get,
@@ -29,6 +30,24 @@ export class RecurringTransactionController {
 
   @Post()
   async create(@Req() req: any, @Body() body: any) {
+    const startDateKey = this.getDateOnlyString(body.startDate, 'Data de início');
+    const endDateKey = body.endDate
+      ? this.getDateOnlyString(body.endDate, 'Data de fim')
+      : undefined;
+    const todayKey = this.getTodayDateOnlyString('America/Sao_Paulo');
+
+    if (startDateKey < todayKey) {
+      throw new BadRequestException(
+        'A data de início não pode ser anterior a hoje',
+      );
+    }
+
+    if (endDateKey && endDateKey <= startDateKey) {
+      throw new BadRequestException(
+        'A data de fim deve ser posterior à data de início',
+      );
+    }
+
     const result = await this.createUsecase.execute({
       userId: req.userId,
       type: body.type,
@@ -37,13 +56,54 @@ export class RecurringTransactionController {
       amount: body.amount,
       description: body.description,
       frequency: body.frequency,
-      startDate: new Date(body.startDate),
-      endDate: body.endDate ? new Date(body.endDate) : undefined,
+      startDate: this.parseDateOnly(startDateKey),
+      endDate: endDateKey ? this.parseDateOnly(endDateKey) : undefined,
       dayOfMonth: body.dayOfMonth,
       dayOfWeek: body.dayOfWeek,
     });
 
     return result;
+  }
+
+  private getDateOnlyString(value: unknown, fieldName: string): string {
+    if (typeof value !== 'string') {
+      throw new BadRequestException(`${fieldName} inválida`);
+    }
+
+    const dateOnly = value.split('T')[0];
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+      throw new BadRequestException(`${fieldName} inválida`);
+    }
+
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      throw new BadRequestException(`${fieldName} inválida`);
+    }
+
+    return dateOnly;
+  }
+
+  private parseDateOnly(dateOnly: string): Date {
+    const [year, month, day] = dateOnly.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+
+  private getTodayDateOnlyString(timeZone: string): string {
+    const formatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+
+    return formatter.format(new Date());
   }
 
   @Get()

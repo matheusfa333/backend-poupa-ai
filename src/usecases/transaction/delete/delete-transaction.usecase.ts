@@ -1,9 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { TransactionGateway } from 'src/domain/repositories/transaction.gateway';
 import { UseCase } from 'src/usecases/usecase';
 import { TransactionNotFoundUsecaseException } from 'src/usecases/exceptions/transaction-not-found.usecase.exception';
 import { UnauthorizedTransactionAccessUsecaseException } from 'src/usecases/exceptions/unauthorized-transaction-access.usecase.exception';
 import { RecurringTransactionNotEditableUsecaseException } from 'src/usecases/exceptions/recurring-transaction-not-editable.usecase.exception';
+import type { RecurringTransactionRepository } from 'src/domain/repositories/recurring-transaction.repository.interface';
 
 export type DeleteTransactionInput = {
   transactionId: string;
@@ -18,7 +19,11 @@ export type DeleteTransactionOutput = {
 export class DeleteTransactionUseCase
   implements UseCase<DeleteTransactionInput, DeleteTransactionOutput>
 {
-  public constructor(private readonly transactionGateway: TransactionGateway) {}
+  public constructor(
+    private readonly transactionGateway: TransactionGateway,
+    @Inject('RecurringTransactionRepository')
+    private readonly recurringTransactionRepository: RecurringTransactionRepository,
+  ) {}
 
   public async execute({
     transactionId,
@@ -42,8 +47,19 @@ export class DeleteTransactionUseCase
     }
 
     // 4. Verifica se é uma transação gerada por recorrência (não pode ser deletada)
-    if (transaction.getRecurringTransactionId()) {
-      throw new RecurringTransactionNotEditableUsecaseException(transactionId);
+    const recurringTransactionId = transaction.getRecurringTransactionId();
+
+    if (recurringTransactionId) {
+      const recurringTransaction =
+        await this.recurringTransactionRepository.findById(
+          recurringTransactionId,
+        );
+
+      if (recurringTransaction?.isActive()) {
+        throw new RecurringTransactionNotEditableUsecaseException(
+          transactionId,
+        );
+      }
     }
 
     // 5. Soft delete
