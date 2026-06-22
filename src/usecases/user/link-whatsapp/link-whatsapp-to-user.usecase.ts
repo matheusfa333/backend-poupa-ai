@@ -55,7 +55,7 @@ export class LinkWhatsappToUserUseCase
 
     return {
       success: true,
-      whatsappNumber: whatsappNumber,
+      whatsappNumber: user.getWhatsappNumber() as string,
     };
   }
 }

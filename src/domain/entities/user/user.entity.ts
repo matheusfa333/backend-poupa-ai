@@ -140,7 +140,9 @@ export class User extends Entity {
   }
 
   public updateWhatsappNumber(whatsappNumber: string | null): void {
-    this.whatsappNumber = whatsappNumber;
+    this.whatsappNumber = whatsappNumber
+      ? whatsappNumber.replace(/[^\d]/g, '')
+      : null;
     this.updatedAt = new Date();
     this.validate();
   }
