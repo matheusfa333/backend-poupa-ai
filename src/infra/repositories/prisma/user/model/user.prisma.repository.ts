@@ -45,7 +45,10 @@ export class UserPrismaRepository extends UserGateway {
   }
 
   public async findByWhatsappNumber(whatsappNumber: string): Promise<User | null> {
-    const normalized = whatsappNumber.replace(/[^\d]/g, '');
+    let normalized = whatsappNumber.replace(/[^\d+]/g, '');
+    if (!normalized.startsWith('+')) {
+      normalized = `+${normalized}`;
+    }
 
     const aModel = await prismaClient.user.findUnique({
       where: { whatsappNumber: normalized },

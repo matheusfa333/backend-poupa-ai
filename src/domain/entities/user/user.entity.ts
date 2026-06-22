@@ -140,9 +140,15 @@ export class User extends Entity {
   }
 
   public updateWhatsappNumber(whatsappNumber: string | null): void {
-    this.whatsappNumber = whatsappNumber
-      ? whatsappNumber.replace(/[^\d]/g, '')
-      : null;
+    if (whatsappNumber) {
+      let normalized = whatsappNumber.replace(/[^\d+]/g, '');
+      if (!normalized.startsWith('+')) {
+        normalized = `+${normalized}`;
+      }
+      this.whatsappNumber = normalized;
+    } else {
+      this.whatsappNumber = null;
+    }
     this.updatedAt = new Date();
     this.validate();
   }
