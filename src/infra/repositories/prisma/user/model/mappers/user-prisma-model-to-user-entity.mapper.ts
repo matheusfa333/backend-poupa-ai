@@ -3,9 +3,7 @@ import UserPrismaModel from '../user.prisma.model';
 
 export class UserPrismaModelToUserEntityMapper {
   public static map(user: UserPrismaModel): User {
-    const whatsappNumber = user.whatsappNumber
-      ? user.whatsappNumber.replace(/[^\d]/g, '')
-      : null;
+    const whatsappNumber = user.whatsappNumber;
 
     const anUser = User.with({
       id: user.id,
