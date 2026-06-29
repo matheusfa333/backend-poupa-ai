@@ -37,6 +37,8 @@ import { GetExpensesByCategoryRoute } from './routes/transaction/by-category/get
 import { GetEnumsMetadataRoute } from './routes/metadata/get-enums/get-enums-metadata.route';
 import { ExtractFromImageRoute } from './routes/transaction/extract-from-image/extract-from-image.route';
 import { GenerateReportRoute } from './routes/transaction/generate-report/generate-report.route';
+import { GenerateReportPdfRoute } from './routes/transaction/generate-report/generate-report-pdf.route';
+import { ReportPdfService } from '../services/pdf/report-pdf.service';
 import { RecurringTransactionModule } from './routes/recurring-transaction/recurring-transaction.module';
 
 @Module({
@@ -63,10 +65,12 @@ import { RecurringTransactionModule } from './routes/recurring-transaction/recur
     GetExpensesByCategoryRoute,
     ExtractFromImageRoute,
     GenerateReportRoute,
+    GenerateReportPdfRoute,
     // Metadata routes
     GetEnumsMetadataRoute,
   ],
   providers: [
+    ReportPdfService,
     AuthGuardProvider,
     ValidatorDomainExceptionFilterProvider,
     DomainExceptionFilterProvider,
