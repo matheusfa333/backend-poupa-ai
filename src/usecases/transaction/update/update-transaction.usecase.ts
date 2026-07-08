@@ -3,7 +3,6 @@ import { TransactionGateway } from 'src/domain/repositories/transaction.gateway'
 import { UseCase } from 'src/usecases/usecase';
 import { TransactionNotFoundUsecaseException } from 'src/usecases/exceptions/transaction-not-found.usecase.exception';
 import { UnauthorizedTransactionAccessUsecaseException } from 'src/usecases/exceptions/unauthorized-transaction-access.usecase.exception';
-import { RecurringTransactionNotEditableUsecaseException } from 'src/usecases/exceptions/recurring-transaction-not-editable.usecase.exception';
 import {
   Transaction,
   TransactionType,
@@ -66,12 +65,7 @@ export class UpdateTransactionUseCase
       );
     }
 
-    // 4. Verifica se é uma transação gerada por recorrência (não pode ser editada)
-    if (existingTransaction.getRecurringTransactionId()) {
-      throw new RecurringTransactionNotEditableUsecaseException(transactionId);
-    }
-
-    // 5. Cria nova instância com dados atualizados (usando .with para hidratar)
+    // 4. Cria nova instância com dados atualizados (usando .with para hidratar)
     const updatedTransaction = Transaction.with({
       id: existingTransaction.getId(),
       userId: existingTransaction.getUserId(),
@@ -93,10 +87,10 @@ export class UpdateTransactionUseCase
       updatedAt: new Date(), // Atualiza timestamp
     });
 
-    // 6. Persiste no banco
+    // 5. Persiste no banco
     await this.transactionGateway.update(updatedTransaction);
 
-    // 7. Retorna output
+    // 6. Retorna output
     return {
       id: updatedTransaction.getId(),
       type: updatedTransaction.getType(),

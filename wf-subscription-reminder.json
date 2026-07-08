@@ -1,0 +1,247 @@
+[
+  {
+    "id": "poupaai-subscription-reminder-001",
+    "name": "PoupaAI - Lembrete de Assinaturas",
+    "description": "Envia lembretes de assinaturas via WhatsApp 1 dia antes do vencimento",
+    "active": true,
+    "isArchived": false,
+    "nodes": [
+      {
+        "parameters": {
+          "rule": {
+            "interval": [
+              {
+                "field": "cronExpression",
+                "expression": "0 8 * * *"
+              }
+            ]
+          }
+        },
+        "type": "n8n-nodes-base.scheduleTrigger",
+        "typeVersion": 1.2,
+        "position": [-200, 0],
+        "id": "node-cron",
+        "name": "Todo Dia 8h"
+      },
+      {
+        "parameters": {
+          "method": "GET",
+          "url": "https://api.alphaitservices.com.br/api/recurring-transactions/subscriptions/due-soon",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "X-Api-Key",
+                "value": "poupa-ai-n8n-webhook-2025"
+              }
+            ]
+          },
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [20, 0],
+        "id": "node-buscar-assinaturas",
+        "name": "Buscar Assinaturas"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-has-subscriptions",
+                "leftValue": "={{ $json.subscriptions && $json.subscriptions.length > 0 }}",
+                "rightValue": true,
+                "operator": {
+                  "type": "boolean",
+                  "operation": "equals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [240, 0],
+        "id": "node-tem-assinaturas",
+        "name": "Tem Assinaturas?"
+      },
+      {
+        "parameters": {
+          "fieldToSplitOut": "subscriptions",
+          "options": {}
+        },
+        "type": "n8n-nodes-base.splitOut",
+        "typeVersion": 1,
+        "position": [460, -80],
+        "id": "node-split",
+        "name": "Separar Assinaturas"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "options": {
+              "caseSensitive": true,
+              "leftValue": "",
+              "typeValidation": "loose",
+              "version": 2
+            },
+            "conditions": [
+              {
+                "id": "cond-has-whatsapp",
+                "leftValue": "={{ $json.userWhatsapp }}",
+                "rightValue": "",
+                "operator": {
+                  "type": "string",
+                  "operation": "notEquals"
+                }
+              }
+            ],
+            "combinator": "and"
+          },
+          "options": {}
+        },
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.2,
+        "position": [680, -80],
+        "id": "node-tem-whatsapp",
+        "name": "Tem WhatsApp?"
+      },
+      {
+        "parameters": {
+          "jsCode": "const s = $input.item.json;\nconst amountReais = (s.amount / 100).toFixed(2).replace('.', ',');\nconst descricao = s.description || 'sua assinatura';\n\nconst texto = `⏰ *Lembrete PoupaAI*\\n\\nOlá! Sua assinatura *${descricao}* no valor de *R$ ${amountReais}* vence *amanhã*.\\n\\nNão esqueça de verificar se há saldo disponível! 💡\\n\\n_PoupaAI - Seu assistente financeiro_`;\n\nconst numero = s.userWhatsapp.replace(/\\D/g, '');\nconst numeroFormatado = numero.startsWith('55') ? numero : `55${numero}`;\n\nreturn {\n  json: {\n    number: numeroFormatado,\n    text: texto,\n    descricao,\n    amountReais\n  }\n};"
+        },
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2,
+        "position": [900, -160],
+        "id": "node-montar-mensagem",
+        "name": "Montar Mensagem"
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "http://172.30.0.11:8080/message/sendText/poupaai",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "apikey",
+                "value": "1d1d610099d384a511d17808a6a24d506811ae60a9782509016db1657a68b734"
+              },
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={{ JSON.stringify({ number: $json.number, text: $json.text }) }}",
+          "options": {
+            "response": {
+              "response": {
+                "neverError": true
+              }
+            }
+          }
+        },
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "position": [1120, -160],
+        "id": "node-enviar-whatsapp",
+        "name": "Enviar WhatsApp"
+      }
+    ],
+    "connections": {
+      "Todo Dia 8h": {
+        "main": [
+          [
+            {
+              "node": "Buscar Assinaturas",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Buscar Assinaturas": {
+        "main": [
+          [
+            {
+              "node": "Tem Assinaturas?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tem Assinaturas?": {
+        "main": [
+          [
+            {
+              "node": "Separar Assinaturas",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Separar Assinaturas": {
+        "main": [
+          [
+            {
+              "node": "Tem WhatsApp?",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      },
+      "Tem WhatsApp?": {
+        "main": [
+          [
+            {
+              "node": "Montar Mensagem",
+              "type": "main",
+              "index": 0
+            }
+          ],
+          []
+        ]
+      },
+      "Montar Mensagem": {
+        "main": [
+          [
+            {
+              "node": "Enviar WhatsApp",
+              "type": "main",
+              "index": 0
+            }
+          ]
+        ]
+      }
+    },
+    "settings": {
+      "executionOrder": "v1"
+    },
+    "staticData": null,
+    "meta": null,
+    "pinData": null,
+    "tags": []
+  }
+]
