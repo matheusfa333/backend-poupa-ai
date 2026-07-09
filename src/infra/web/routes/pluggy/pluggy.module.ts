@@ -11,9 +11,10 @@ import { DeletePluggyItemUsecase } from 'src/usecases/pluggy/delete-item/delete-
 import { SyncPluggyItemUsecase } from 'src/usecases/pluggy/sync-item/sync-pluggy-item.usecase';
 import { TransactionGateway } from 'src/domain/repositories/transaction.gateway';
 import { DatabaseModule } from 'src/infra/repositories/database.module';
+import { ServiceModule } from 'src/infra/services/service.module';
 
 @Module({
-  imports: [PrismaModule, DatabaseModule],
+  imports: [PrismaModule, ServiceModule, DatabaseModule],
   controllers: [PluggyController],
   providers: [
     PrismaPluggyItemRepository,
