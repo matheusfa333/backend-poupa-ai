@@ -40,9 +40,10 @@ import { GenerateReportRoute } from './routes/transaction/generate-report/genera
 import { GenerateReportPdfRoute } from './routes/transaction/generate-report/generate-report-pdf.route';
 import { ReportPdfService } from '../services/pdf/report-pdf.service';
 import { RecurringTransactionModule } from './routes/recurring-transaction/recurring-transaction.module';
+import { PluggyModule } from './routes/pluggy/pluggy.module';
 
 @Module({
-  imports: [ServiceModule, UsecaseModule, TransactionUsecaseModule, RecurringTransactionUsecaseModule, RecurringTransactionModule],
+  imports: [ServiceModule, UsecaseModule, TransactionUsecaseModule, RecurringTransactionUsecaseModule, RecurringTransactionModule, PluggyModule],
   controllers: [
     // User routes
     CreateUserRoute,

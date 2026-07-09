@@ -20,6 +20,7 @@ model User {
   transactions          Transaction[]
   recurringTransactions RecurringTransaction[]
   refreshTokens         RefreshToken[]
+  pluggyItems           PluggyItem[]
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
 
@@ -124,6 +125,23 @@ model RecurringTransaction {
   @@map("recurring_transaction")
 }
 
+model PluggyItem {
+  id          String    @id @default(uuid())
+  userId      String
+  itemId      String    @unique
+  connectorId Int?
+  bankName    String?
+  status      String    @default("UPDATED")
+  lastSyncAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("pluggy_item")
+}
+
 enum Role {
   USER
   ADMIN
@@ -149,6 +167,8 @@ enum TransactionCategory {
   EDUCACAO
   MORADIA
   VESTUARIO
+  CARTAO_CREDITO
+  ASSINATURA
 
   // Categorias de RECEITA
   SALARIO
